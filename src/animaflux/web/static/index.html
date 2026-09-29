@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AnimaFlux · 灵演 — Life Observatory</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div><b>AnimaFlux</b><small id="brandSub">灵演 · 生命观测站</small></div>
+      </div>
+      <nav class="nav" id="nav" aria-label="主导航"></nav>
+      <div class="sidebar-bottom">
+        <button class="lang-toggle" id="langToggle" type="button" title="语言 / Language">EN</button>
+        <div class="mini-life" id="miniLife" hidden>
+          <div class="avatar sm" id="miniLifeAvatar"></div>
+          <div><b id="miniLifeName"></b><small id="miniLifeSub"></small></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main" id="app"></main>
+  </div>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <h2 id="drawer-title">Why</h2>
+      <button class="drawer-close" id="drawer-close" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
