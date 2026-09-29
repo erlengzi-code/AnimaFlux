@@ -1,190 +1,478 @@
 <div align="center">
 
-# AnimaFlux / 灵演
-
-**An Open Runtime for Evolving Digital Life**
-
-*让 AI 活着，而不只是回答。* · *Let AI live, not just answer.*
-
-Python 3.10+ · v0.1.0 · 300 passed / 1 skipped
+[English](README.md) · [中文](README.zh-CN.md)
 
 </div>
 
 ---
 
-## 这是什么
+<div align="center">
 
-AnimaFlux 不是把一长串角色 Prompt 包在 LLM 外面。它是一个**会演化的数字生命运行时**：生命拥有持续的状态，会把经历沉淀成记忆、让记忆反过来影响未来，关系会变化，目标与信念会演化，并最终形成自我与人生叙事。
+# AnimaFlux · 灵演
 
+> **An Open Runtime for Evolving Digital Life**
+>
+> **让 AI 活着，而不只是回答。**
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Version](https://img.shields.io/badge/version-0.1.0-0066cc?style=flat-square)](https://github.com/erlengzi-code/AnimaFlux)
+[![License](https://img.shields.io/badge/license-MIT-28a745?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-300%20passed-28a745?style=flat-square)]()
+[![Stars](https://img.shields.io/github/stars/erlengzi-code/AnimaFlux?style=social)](https://github.com/erlengzi-code/AnimaFlux)
+
+</div>
+
+---
+
+## What is AnimaFlux?
+
+AnimaFlux is an experimental open-source runtime for building **persistent, evolving digital lives**.
+
+Traditional LLM agents are built around a single task:
+
+```text
+Input → Reason → Tool → Output
 ```
-Agent = LLM + State + Dynamics + Memory + Environment
+
+AnimaFlux asks a different question:
+
+> **What happens when an AI doesn't just complete a task, but keeps living?**
+
+An AnimaFlux Life has its own time, body, memory, emotion, belief, goal, relationship, self-model and life narrative. It is shaped by the world — and it acts back on the world through its own choices.
+
+```mermaid
+flowchart LR
+    World --> Perception
+    Perception --> Cognition[Memory / Belief / Emotion]
+    Cognition --> Motivation[Drive / Goal]
+    Motivation --> Decision
+    Decision --> Action
+    Action --> World
 ```
 
-核心边界：**AnimaFlux models the life, not the universe.**（模拟生命本身，而不是整个宇宙。）外部世界通过 Environment Adapter 接入，不实现完整城市 / 经济 / 战斗 / 物理模拟。
+So the core is not `Prompt + LLM`, but:
 
-## 核心概念
+```text
+Digital Life = LLM + State + Memory + Dynamics + Time + Environment
+```
 
-### 13 个 Core State（已冻结）
+---
 
-| 分组 | State |
+## Why AnimaFlux?
+
+LLMs are great at understanding, reasoning and generating language. But a long-lived digital life also needs **time, state, memory, growth, causality, relationships, goals, actions and history**.
+
+If all of that lives inside one ever-growing prompt, you quickly hit:
+
+- context growing without bound
+- memory mixed up with chat history
+- personality that can't evolve stably
+- state you can't trace
+- history you can't replay
+- futures you can't compare
+
+AnimaFlux's answer:
+
+> **LLM is cognition. The runtime owns the life.**
+
+---
+
+## Core Life Model
+
+AnimaFlux defines **13 core life states** (frozen in v0.1):
+
+```mermaid
+flowchart TB
+    subgraph Stable["Stable Self"]
+        Identity
+        Personality
+        Value
+        SelfModel["Self Model"]
+        Narrative
+    end
+    subgraph Active["Active Mind"]
+        Emotion
+        Drive
+        Belief
+        Goal
+    end
+    subgraph Context["Life Context"]
+        Body
+        Memory
+        Relationship
+        WorldModel["World Model"]
+    end
+```
+
+Each answers a distinct question:
+
+| State | Question it answers |
 | --- | --- |
-| 稳定自我 | Identity · Personality · Value · Self Model · Narrative |
-| 活跃心智 | Emotion · Drive · Belief · Goal |
-| 生命上下文 | Body · Memory · Relationship · World Model |
+| Identity | Who am I, objectively? |
+| Body | What is my body / physiology? |
+| Personality | How do I tend to react? |
+| Emotion | How do I feel right now? |
+| Drive | What is motivating me? |
+| Memory | What do I remember? |
+| Belief | Which propositions do I hold to be true? |
+| Value | What matters to me? |
+| Goal | What future do I want? |
+| Relationship | What is my relationship to others? |
+| World Model | How do I structure the world? |
+| Self Model | Who do I think I am? |
+| Narrative | How do I explain my own life? |
 
-### 6 个 Cognitive Process（已冻结）
+These are **not one big JSON**. Each state has its own owner, update rules, evidence sources, and rate of change.
 
-`Perception` · `Memory Retrieval` · `Appraisal` · `Decision-Planning` · `Communication` · `Reflection`
+On top of these, **6 core cognitive processes** run each tick:
 
-### 关键边界
+```text
+Perception · Memory Retrieval · Appraisal · Decision-Planning · Communication · Reflection
+```
 
-- **自己的状态自己解释，别人的状态只能提出影响（Influence）。** 一个 State Namespace 恰好一个 Primary Owner；非 Owner 不能直接写 State。
-- **跨模块读取走 Capability（immutable View），不碰内部实现。**
-- **知识边界严格可测**：`Objective Reality ≠ Perception ≠ Memory ≠ Belief ≠ World Model ≠ Narrative`；「不知道」≠「不记得」。
-- **LLM = Cognitive Capability，不是 Agent。** 代码 owns 规则 / 权限 / 状态所有权 / 事务 / Replay 正确性；LLM 只做复杂语义；**Deterministic First**，默认零 LLM 也能运行。
-- **State 只新增版本、不覆盖（Copy-on-Write）**；Checkpoint 引用 Commit；Branch 不复制历史。
-- **三种时间语义严格区分**：`RESTORE`（续命）/ `REPLAY`（只读重放，零 LLM 调用）/ `BRANCH`（从过去产生新未来）。
+---
 
-## 特性（v0.1）
+## Life Loop
 
-- ✅ 13 Core State + 6 Cognitive Process 全落地
-- ✅ 标准 Life Loop（Tick 12 步）
-- ✅ SQLite + InMemory 双后端，Copy-on-Write + Commit Journal + Current Pointer
-- ✅ Memory 作为唯一强制 Specialized Store（Episodic / Semantic / Procedural / Autobiographical）
-- ✅ 精确重放 / 人生分支 / 恢复
-- ✅ 公开 API（`AnimaFlux` / `LifeHandle`）+ CLI + 本地 Web Console
-- ✅ 可选 LLM Provider（SiliconFlow，OpenAI-compatible；默认确定性模板）
-- ✅ 300+ 测试，含 13 条 Architecture Regression
+A life advances through discrete `Tick`s:
 
-## 安装
+```mermaid
+flowchart TB
+    Env[Environment] --> Obs[Observation]
+    Obs --> Perc[Perception]
+    Perc --> Retr[Memory Retrieval]
+    Retr --> Appr[Appraisal]
+    Appr --> Dyn[Internal Dynamics]
+    Dyn --> Goal[Goal Review]
+    Goal --> Dec[Decision]
+    Dec --> Act[Action Intent]
+    Act -->|acts on| Env
+    Env -->|consequence| Form[Memory Formation]
+    Form --> Refl[Reflection]
+    Refl --> Commit[Commit]
+    Commit -->|next tick| Env
+```
 
-需要 Python >= 3.10。
+Every tick produces a new, persisted life state.
+
+---
+
+## Subjective Reality
+
+AnimaFlux holds a strict boundary:
+
+```text
+Reality ≠ Perception ≠ Memory ≠ Belief ≠ World Model ≠ Narrative
+```
+
+What the world knows is not what the agent knows. Example:
+
+```text
+Objective reality: Alex didn't reply because he's busy at work.
+Agent observation:  Alex hasn't replied in 36 hours.
+Agent belief:       "Is he pulling away from me?"
+```
+
+That belief may be wrong — but if it comes from what the agent actually observed and experienced, it is a **legitimate subjective state**. "Doesn't know" is not "doesn't remember", and both are testable.
+
+---
+
+## Memory Is Not Chat History
+
+AnimaFlux never uses a full chat transcript as its memory system. Memory is an independent long-term life system:
+
+```text
+Episodic · Semantic · Procedural · Autobiographical
+```
+
+And:
+
+```text
+Event ≠ Memory
+Stored Memory ≠ Retrieved Memory
+Forgetting ≠ Delete
+```
+
+Each cognitive step retrieves only a limited, relevant, budgeted slice of memory.
+
+---
+
+## Growth & Experience
+
+No `experience_level = 8` or `maturity = 75%`. AnimaFlux separates:
+
+```text
+Age ≠ Experience ≠ Skill ≠ Self-Efficacy
+```
+
+And experience is **domain-specific** (`public_speaking`, `research`, `relationship.conflict`, …). So the same life, years later, facing a similar event, may have more relevant memory, lower novelty, more mature procedural experience, and a different sense of self-efficacy — without the system ever assuming "older = more mature".
+
+---
+
+## Agency
+
+A life is not a passive reactor. It supports both:
+
+```text
+World → Life        (perception)
+Life → Action → World   (agency)
+```
+
+A life can act on its own Drive, Goal, Belief, Memory, Relationship and World Model:
+
+```text
+Goal:     prepare tomorrow's research talk
+Memory:   asking for feedback early helped last time
+Decision: proactively seek a mentor's feedback
+Action:   seek_feedback
+```
+
+The environment decides whether the world allows it and what actually results.
+
+> **The world shapes the life, and the life acts back on the world.**
+
+---
+
+## Replay & Life Branches
+
+Three strictly distinct time semantics:
+
+```text
+RESTORE   continue a past life
+REPLAY    read-only replay of what already happened (zero LLM calls)
+BRANCH    fork a new future from the past
+```
+
+```mermaid
+flowchart TB
+    Genesis((Genesis)) --> CP[Checkpoint]
+    CP --> A[Branch A<br/>keep the bond]
+    CP --> B[Branch B<br/>drift apart]
+```
+
+Branches share the pre-fork past and evolve independent futures — so you can study *"what if the life had chosen differently?"*
+
+---
+
+## Causal Trace — "Why?"
+
+Every important behavior can answer **why**. Source references, evidence and provenance are recorded through the pipeline:
+
+```text
+Why did the life reach out to Alex?
+  Drive   → connection
+  Goal    → maintain an important relationship
+  Memory  → long silence caused distance before
+  Belief  → proactive contact may help
+  Decision → contact Alex
+  Action  → message sent
+```
+
+This is a runtime causal chain built from real state — not an explanation the LLM invents afterwards.
+
+---
+
+## Architecture
+
+```text
+Microkernel + State Owners + Cognitive Processes + Persistence + Environment Adapters
+```
+
+Dependency direction:
+
+```text
+Application → Public API → Runtime → Kernel / Contracts
+```
+
+Plugins may only read another module's **public capability** (an immutable view) and request changes via **influence** — never write another module's state directly. The core rule:
+
+> **Each module interprets its own state; others may only propose influence; the runtime commits the final state.**
+
+This is enforced by 13 architecture-regression tests (owner isolation, capability immutability, transaction rollback, replay exactness, branch isolation, knowledge boundary, …).
+
+---
+
+## Persistence
+
+Default backend is **SQLite** (an in-memory backend is also provided), built on:
+
+```text
+Immutable State Versions + Copy-on-Write + Commit Journal + Checkpoint
+```
+
+State is never overwritten — new versions are appended, the current pointer advances last. That is what makes restore, replay, branch and causal trace possible.
+
+---
+
+## Local Web Console
+
+A local observatory, built on **FastAPI + vanilla JavaScript**, and nothing more than another consumer of the public API:
+
+```text
+Browser → FastAPI → AnimaFlux Public API → Runtime
+```
+
+It never touches `StateStore` / `StateOwner` / `Resolver` / DB internals directly. Views include **Life · Talk · Timeline · Mind · Branches**, for watching a life's current state, conversation, memory, relationships, growth, history and branches.
+
+---
+
+## Project Philosophy
+
+```text
+LLM is cognition, not the runtime.
+State is not prompt text.
+Memory is not chat history.
+Objective reality is not subjective belief.
+Age is not experience.
+Experience is not skill.
+Reflection does not directly mutate the world.
+Action does not guarantee success.
+Replay does not create a new future.
+Branching never rewrites the past.
+```
+
+And:
+
+> **A digital life should not only remember what happened to it. It should become different because it lived through it.**
+
+---
+
+## Quick Start
+
+Requires Python 3.10+. Create a virtualenv and install:
 
 ```bash
-# 只装核心（CLI + Python API，仅依赖 pydantic）
-pip install -e .
+git clone https://github.com/erlengzi-code/AnimaFlux.git
+cd AnimaFlux
 
-# 含 Web Console
+python -m venv .venv
+# Windows: .venv\Scripts\activate      Linux/Mac: source .venv/bin/activate
+
+pip install -e ".[dev]"     # core + web + test tooling
+```
+
+Run the test suite:
+
+```bash
+pytest        # 300 passed, 1 skipped (the skip is an opt-in live-LLM smoke test)
+```
+
+Run the official demos (a multi-day growth arc, a relationship fork, four lives/four deaths):
+
+```bash
+python -m animaflux demo
+```
+
+Start the local web console:
+
+```bash
 pip install -e ".[web]"
-
-# 含测试工具
-pip install -e ".[dev]"
+python -m animaflux web --open        # or double-click start_web.bat on Windows
 ```
 
-## 快速开始
-
-### CLI
-
-```bash
-python -m animaflux --version                 # animaflux 0.1.0
-
-python -m animaflux create --name 小林 --values growth care
-python -m animaflux step --seconds 3600
-python -m animaflux observe --text "你的第一次公开演讲下周举行"
-python -m animaflux status                    # 当前 Committed 状态摘要
-python -m animaflux inspect --namespace emotion
-python -m animaflux checkpoint
-python -m animaflux branch --name 平行人生
-python -m animaflux replay                    # 只读回放 Commit Journal
-```
-
-### Python API
+Minimal Python API:
 
 ```python
-from datetime import datetime
 from animaflux.api import AnimaFlux, CharacterBootstrap
 
 flux = AnimaFlux()
-handle = flux.create_life(
-    "my-life",
-    bootstrap=CharacterBootstrap(primary_name="小林", values=("growth", "care")),
-    start_time=datetime(2000, 1, 1),
-)
+life = flux.create_life("life-1", bootstrap=CharacterBootstrap(primary_name="Lin"))
 
-handle.observe_text("You have an exciting opportunity: give your first talk in one week.")
+life.observe_text("You have a chance to give your first public talk next week.")
 for _ in range(6):
-    handle.advance(86400.0)
-    handle.act()
+    life.advance(86400.0)
+    life.act()
 
-handle.checkpoint()
+life.checkpoint()
 ```
 
-`send_text()` 完整经过 Cognition，不等价于 `llm.chat()`。
+---
 
-### Web Console（数字生命观察舱）
+## Documentation
 
-```bash
-python -m animaflux web --open
-# 或 Windows 下双击 start_web.bat
-```
-
-打开 http://127.0.0.1:8000 —— 五大视图：**Life / Talk / Timeline / Mind / Branches**。
-
-### 官方 Demo
-
-```bash
-python -m animaflux.demo
-```
-
-- **主线 A**：多日成长年 —— 演讲 → 阅历增长（self-efficacy）
-- **主线 B**：关系转折 + 人生分支
-- **主线 C**：同一世界，四条生命，四种死法
-
-## 测试
-
-```bash
-pytest
-# 300 passed, 1 skipped（唯一 skip = 真实 LLM 在线 smoke，需 ANIMAFLUX_SILICONFLOW_API_KEY opt-in）
-```
-
-- 分层：Unit / Contract / Integration / Replay-Branch / Scenario-Life
-- **13 条 Architecture Regression**：Owner isolation · Capability immutability · Transaction rollback · Replay exactness · Branch isolation · Knowledge boundary · LLM retry reuse · External action idempotency · Memory versioning · Development Context …
-- 长期保留测试：Same Age / Different Experience · Different Age / Same Experience · Experience ≠ Competence ≠ Self-Efficacy
-
-## 架构与文档
-
-| 文档 | 内容 |
+| Document | Contents |
 | --- | --- |
-| [设计规范·持续维护版](AnimaFlux_设计规范_持续维护版_FINAL.md) | 速查摘要（接手速读） |
-| [技术架构设计规范 v5.9](AnimaFlux_技术架构设计规范_v5.9_FINAL.md) | 完整技术细节（权威） |
-| [Gate 清单](GATES.md) | P0–P12 阶段验收 |
-| [追溯映射](TRACEABILITY.md) | AD → 模块 → 契约测试 |
-| [功能测试报告](FUNCTIONAL_TEST_REPORT.md) | 20 个端到端「生命切片」场景 |
-| [Web Plan](AnimaFlux_WEB_PLAN_v0.2_FINAL.md) | Web Console 设计 |
+| [技术架构设计规范 v5.9](AnimaFlux_技术架构设计规范_v5.9_FINAL.md) | Full technical spec (authoritative, Chinese) |
+| [设计规范·持续维护版](AnimaFlux_设计规范_持续维护版_FINAL.md) | Quick-reference summary |
+| [GATES.md](GATES.md) | P0–P12 phase acceptance criteria |
+| [TRACEABILITY.md](TRACEABILITY.md) | Spec section → module → test mapping |
+| [FUNCTIONAL_TEST_REPORT.md](FUNCTIONAL_TEST_REPORT.md) | 20 end-to-end "life slice" scenarios |
+| [CLAUDE.md](CLAUDE.md) | Project development constraints |
 
-## 路线图
+---
 
-P0–P12 已完成，**v0.1 达成**（FROZEN FOR IMPLEMENTATION）。硬 Gate：P3 / P4 / P7 / P10。
+## Project Status
 
-```
-P0 Project Skeleton        P6 Perception & Appraisal
-P1 Core Contracts          P7 Memory & Experience      ★Gate
-P2 Kernel                  P8 Motivation & Social
-P3 State Runtime    ★Gate  P9 Slow Self Development
-P4 SQLite Transaction ★Gate P10 Replay & Branch         ★Gate
-P5 First Life Slice        P11 Public API / CLI / Demo
-                           P12 Hardening & v0.1 Release
-```
+**v0.1 is frozen and implemented.** The architecture is frozen (`FROZEN FOR IMPLEMENTATION`) — 13 states + 6 processes are fixed, and new features go to the v0.2 backlog rather than expanding the core. It remains an experimental research/engineering project; APIs may still change.
 
-## 目录结构
+---
 
-```
+## Repository Structure
+
+```text
 src/animaflux/
-├── contracts/            # 框架契约（Protocol / dataclass / Enum）
-├── kernel/               # 机制内核（Time / Random / Plugin / Scheduler）
-├── runtime/              # 生命周期（Resolver / Transaction / Replay / Branch）
-├── state/                # 版本化状态存储
+├── contracts/      # framework contracts (Protocol / dataclass / Enum)
+├── kernel/         # mechanism kernel (time, random, plugin, scheduler)
+├── runtime/        # life loop, resolver, transaction, replay, branch
+├── state/          # versioned state store
 ├── plugins/
-│   ├── default_life/         # 12 个 Core State Owner
-│   └── default_cognition/    # 6 个 Cognitive Process
-├── memory/               # 唯一强制 Specialized Store
-├── persistence/          # SQLite + InMemory 双后端
-├── llm/                  # 可选 Provider / Call Strategy
-├── environment/          # Environment Adapter / Scenario
-├── web/                  # 本地 Web Console
-└── cli/                  # 命令行
+│   ├── default_life/       # 12 core-state owners
+│   └── default_cognition/  # 6 cognitive processes
+├── memory/         # the one mandatory specialized store
+├── persistence/    # SQLite + in-memory backends
+├── llm/            # optional provider + call strategy
+├── environment/    # environment adapter / scenarios
+├── web/            # local web console
+└── cli/            # command line
 ```
+
+---
+
+## Roadmap
+
+v0.1 deliberately models **the life, not the universe** — the world arrives through an *environment adapter*, not a full simulation. Future directions include:
+
+```text
+World Runtime          persistent world dynamics beyond single scenarios
+Pluggable Worlds       novel / historical / game worlds via a structured world spec
+Novel / World Importer generate a structured world from source material
+Multi-Life Interaction independent lives sharing one world
+Research Tools         replay / branch / causal comparison
+Visualization          richer life timeline and world UI
+```
+
+The goal is not a giant feature set. It is to answer one question well:
+
+> **What does it take for an AI to have a life instead of only a conversation?**
+
+---
+
+## Contributing
+
+Interesting areas include state models, cognitive processes, memory retrieval, environment adapters, LLM providers, scenarios, replay/branch tooling and visualization.
+
+Keep one architectural rule in mind:
+
+> **Do not bypass the runtime to directly mutate another module's state.**
+
+---
+
+## Disclaimer
+
+AnimaFlux is an experimental simulation framework. The built-in life models are engineering abstractions inspired by cognitive and agent-system concepts — **not a scientific model of human psychology**. Third-party worlds, novels, characters or datasets should only be used with the appropriate rights or permissions.
+
+---
 
 ## License
 
 [MIT](LICENSE) © 2026 erlengzi-code
+
+---
+
+<p align="center">
+
+**AnimaFlux · 灵演**
+
+*Let AI live, not just answer.*
+
+</p>
